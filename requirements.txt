@@ -4,6 +4,7 @@ sqlalchemy
 aiosqlite
 jinja2
 python-dotenv
-passlib[bcrypt] 
-itsdangerous 
-python-multipart 
+passlib[bcrypt]
+itsdangerous
+python-multipart
+getpass 
