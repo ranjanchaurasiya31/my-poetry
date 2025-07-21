@@ -10,6 +10,7 @@ from starlette.middleware.sessions import SessionMiddleware
 import uuid
 from dotenv import load_dotenv
 load_dotenv()
+from passlib.context import CryptContext
 
 DATABASE_URL = "sqlite:///./poetry.db"
 Base = declarative_base()
@@ -22,8 +23,10 @@ templates = Jinja2Templates(directory="templates")
 # Add session middleware
 app.add_middleware(SessionMiddleware, secret_key="supersecretkey")
 
-ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME", "ranjan1497")
-ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD", "Ranjanchaurasiya31")
+ADMIN_USERNAME = os.environ.get("ADMIN_USERNAME")
+ADMIN_PASSWORD = os.environ.get("ADMIN_PASSWORD")
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 # Models
 class Poem(Base):
@@ -39,8 +42,8 @@ class Like(Base):
     __tablename__ = "likes"
     id = Column(Integer, primary_key=True, index=True)
     poem_id = Column(Integer, ForeignKey("poems.id"))
-    value = Column(Integer)  # 1 for like, -1 for dislike
-    session_id = Column(String, nullable=False)  # New: session identifier
+    value = Column(Integer)  
+    session_id = Column(String, nullable=False)  
     poem = relationship("Poem", back_populates="likes")
 
 class Comment(Base):
@@ -50,6 +53,12 @@ class Comment(Base):
     content = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     poem = relationship("Poem", back_populates="comments")
+
+class Admin(Base):
+    __tablename__ = "admins"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, nullable=False)
+    password_hash = Column(String, nullable=False)
 
 # Dependency
 def get_db():
@@ -63,14 +72,34 @@ def get_db():
 if not os.path.exists("./poetry.db"):
     Base.metadata.create_all(bind=engine)
 
+# Script to add a new admin
+if __name__ == "__main__":
+    import getpass
+    from sqlalchemy.orm import Session
+    Base.metadata.create_all(bind=engine)
+    db = SessionLocal()
+    username = input("Enter new admin username: ")
+    password = getpass.getpass("Enter new admin password: ")
+    password_hash = pwd_context.hash(password)
+    if db.query(Admin).filter(Admin.username == username).first():
+        print("Admin with this username already exists.")
+    else:
+        admin = Admin(username=username, password_hash=password_hash)
+        db.add(admin)
+        db.commit()
+        print(f"Admin '{username}' created successfully.")
+    db.close()
+
 @app.get("/login", response_class=HTMLResponse)
 def login_form(request: Request):
     return templates.TemplateResponse("login.html", {"request": request, "error": None})
 
 @app.post("/login", response_class=HTMLResponse)
-def login(request: Request, response: Response, username: str = Form(...), password: str = Form(...)):
-    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+def login(request: Request, response: Response, username: str = Form(...), password: str = Form(...), db: Session = Depends(get_db)):
+    admin = db.query(Admin).filter(Admin.username == username).first()
+    if admin and pwd_context.verify(password, admin.password_hash):
         request.session["admin"] = True
+        request.session["admin_username"] = username
         return RedirectResponse("/", status_code=302)
     else:
         return templates.TemplateResponse("login.html", {"request": request, "error": "Invalid credentials"})
@@ -162,11 +191,11 @@ def like_poem(request: Request, poem_id: int, value: int = Form(...), db: Sessio
     existing = db.query(Like).filter(Like.poem_id == poem_id, Like.session_id == session_id).first()
     if existing:
         if existing.value == value:
-            db.delete(existing)  # Toggle off
+            db.delete(existing) 
             db.commit()
             return RedirectResponse("/", status_code=302)
         else:
-            existing.value = value  # Switch like/dislike
+            existing.value = value  
             db.commit()
             return RedirectResponse("/", status_code=302)
     like = Like(poem_id=poem_id, value=value, session_id=session_id)
@@ -175,7 +204,9 @@ def like_poem(request: Request, poem_id: int, value: int = Form(...), db: Sessio
     return RedirectResponse("/", status_code=302)
 
 @app.post("/poems/{poem_id}/comment")
-def comment_poem(poem_id: int, content: str = Form(...), db: Session = Depends(get_db)):
+def comment_poem(request: Request, poem_id: int, content: str = Form(...), db: Session = Depends(get_db)):
+    if not request.session.get("admin"):
+        raise HTTPException(status_code=403, detail="Not authorized")
     poem = db.query(Poem).filter(Poem.id == poem_id).first()
     if not poem:
         raise HTTPException(status_code=404, detail="Poem not found")
