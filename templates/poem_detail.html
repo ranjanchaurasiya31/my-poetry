@@ -189,12 +189,10 @@
                         {% endif %}
                     </div>
                 {% endfor %}
-                {% if is_admin %}
                 <form action="/poems/{{ poem.id }}/comment" method="post">
                     <input type="text" name="content" placeholder="Add a comment..." required>
                     <button type="submit">Comment</button>
                 </form>
-                {% endif %}
             </div>
         </div>
     </div>

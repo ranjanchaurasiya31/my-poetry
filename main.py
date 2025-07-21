@@ -205,8 +205,6 @@ def like_poem(request: Request, poem_id: int, value: int = Form(...), db: Sessio
 
 @app.post("/poems/{poem_id}/comment")
 def comment_poem(request: Request, poem_id: int, content: str = Form(...), db: Session = Depends(get_db)):
-    if not request.session.get("admin"):
-        raise HTTPException(status_code=403, detail="Not authorized")
     poem = db.query(Poem).filter(Poem.id == poem_id).first()
     if not poem:
         raise HTTPException(status_code=404, detail="Poem not found")
