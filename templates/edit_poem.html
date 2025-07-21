@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit Poem</title>
+</head>
+<body>
+    <h2>Edit Poem</h2>
+    <form action="/poems/{{ poem.id }}/edit" method="post">
+        <input type="text" name="title" value="{{ poem.title }}" required><br><br>
+        <textarea name="content" rows="5" cols="40" required>{{ poem.content }}</textarea><br><br>
+        <button type="submit">Save Changes</button>
+    </form>
+    <a href="/">Back to Home</a>
+</body>
+</html> 

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Admin Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: #f7f7fa;
+            margin: 0;
+            padding: 0;
+        }
+        .login-container {
+            max-width: 400px;
+            margin: 5em auto;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: 0 2px 16px rgba(0,0,0,0.08);
+            padding: 2.5em 2em 2em 2em;
+        }
+        h2 {
+            text-align: center;
+            color: #2d2d2d;
+            margin-bottom: 1.5em;
+        }
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 1em;
+        }
+        input[type="text"], input[type="password"] {
+            padding: 0.8em;
+            border: 1px solid #d0d7e2;
+            border-radius: 6px;
+            font-size: 1em;
+            background: #f7f7fa;
+        }
+        button[type="submit"] {
+            background: #4f8cff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            padding: 0.7em 0;
+            font-size: 1.1em;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button[type="submit"]:hover {
+            background: #2563eb;
+        }
+        .error {
+            color: #e57373;
+            text-align: center;
+            margin-bottom: 1em;
+        }
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 1.5em;
+            color: #4f8cff;
+            text-decoration: none;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Admin Login</h2>
+        {% if error %}<div class="error">{{ error }}</div>{% endif %}
+        <form action="/login" method="post">
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+        <a class="back-link" href="/">Back to Home</a>
+    </div>
+</body>
+</html> 
